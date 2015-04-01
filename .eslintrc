@@ -1,0 +1,19 @@
+{
+    "ecmaFeatures": {
+        "jsx": true
+    },
+    "rules": {
+        "strict": true,
+        "wrap-iife": true,
+        "quotes": "single",
+        "no-undefined": true,
+        "no-underscore-dangle": true,
+        "no-process-exit": true,
+        "camelcase": true
+    },
+    "env": {
+        "browser": true,
+        "node": true,
+        "jasmine": true
+    }
+}

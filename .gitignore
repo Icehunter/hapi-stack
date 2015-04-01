@@ -1,0 +1,3 @@
+certificates/*
+configuration/env.json
+node_modules/*
