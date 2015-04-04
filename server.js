@@ -4,6 +4,8 @@ var Hapi = require('hapi');
 
 // third party imports
 var fs = require('fs');
+var os = require("os");
+var util = require('util');
 var path = require('path');
 var HTTPSignature = require('http-signature');
 var async = require('async');
@@ -20,14 +22,9 @@ var server = new Hapi.Server({
         routes: {
             cors: {
                 origin: [
-                    'http://localhost',
-                    'http://localhost:*',
-                    'http://127.0.0.1',
-                    'http://127.0.0.1:*',
-                    'https://localhost',
-                    'https://localhost:*',
-                    'https://127.0.0.1',
-                    'https://127.0.0.1:*'
+                    os.hostname(),
+                    'localhost',
+                    '127.0.0.1'
                 ],
                 additionalHeaders: ['X-Requested-With', 'token'],
                 credentials: true
@@ -97,7 +94,6 @@ async.series([
         }
 
         server.on('internalError', function (request, err) {
-            console.log('here');
             handleError(err);
             // if you want for format an error with html rather than JSON you can override:
             // request.response.output.payload
@@ -200,35 +196,28 @@ async.series([
     },
     // register proctection of cross domain scripts/sources
     function (cb) {
+        // default sources
+        var defaults = [
+            util.format('ws://%s:*', os.hostname()),
+            'ws://localhost:*',
+            'ws://127.0.0.1:*',
+            'self',
+            '*.bootstrapcdn.com',
+            '*.google.com',
+            '*.googleapis.com',
+            '*.google.com',
+            '*.googleapis.com',
+            '*.gstatic.com',
+            '*.gstatic.com',
+            'unsafe-inline'
+        ];
         server.register({
             register: require('blankie'),
             options: {
-                fontSrc: [
-                    'http://localhost',
-                    'http://localhost:*',
-                    'http://127.0.0.1',
-                    'http://127.0.0.1:*',
-                    'https://localhost',
-                    'https://localhost:*',
-                    'https://127.0.0.1',
-                    'https://127.0.0.1:*',
-                    'http://fonts.gstatic.com',
-                    'https://fonts.gstatic.com',
-                    'unsafe-inline'
-                ],
-                scriptSrc: [
-                    'http://localhost',
-                    'http://localhost:*',
-                    'http://127.0.0.1',
-                    'http://127.0.0.1:*',
-                    'https://localhost',
-                    'https://localhost:*',
-                    'https://127.0.0.1',
-                    'https://127.0.0.1:*',
-                    'http://fonts.gstatic.com',
-                    'https://fonts.gstatic.com',
-                    'unsafe-inline'
-                ]
+                connectSrc: defaults,
+                fontSrc: defaults,
+                scriptSrc: defaults,
+                styleSrc: defaults
             }
         }, function (err) {
             cb(err);
