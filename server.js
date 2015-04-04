@@ -13,31 +13,7 @@ var async = require('async');
 // internal modules
 var formatters = require('./app/helpers/formatters')();
 
-var server = new Hapi.Server({
-    connections: {
-        router: {
-            isCaseSensitive: false,
-            stripTrailingSlash: true
-        },
-        routes: {
-            cors: {
-                origin: [
-                    os.hostname(),
-                    'localhost',
-                    '127.0.0.1'
-                ],
-                additionalHeaders: ['X-Requested-With', 'token'],
-                credentials: true
-            },
-            security: {
-                xframe: false
-            },
-            files: {
-                relativeTo: __dirname
-            }
-        }
-    }
-});
+var server;
 
 function handleConfiguration(env) {
     for (var key in env) {
@@ -80,6 +56,32 @@ async.series([
                 cert: fs.readFileSync(path.join(__dirname, './certificates/server.crt'))
             };
         }
+        server = new Hapi.Server({
+            connections: {
+                router: {
+                    isCaseSensitive: false,
+                    stripTrailingSlash: true
+                },
+                routes: {
+                    cors: {
+                        origin: [
+                            os.hostname(),
+                            process.env.DOMAIN,
+                            'localhost',
+                            '127.0.0.1'
+                        ],
+                        additionalHeaders: ['X-Requested-With', 'token'],
+                        credentials: true
+                    },
+                    security: {
+                        xframe: false
+                    },
+                    files: {
+                        relativeTo: __dirname
+                    }
+                }
+            }
+        });
         server.connection(connectionOptions);
         cb();
     },
@@ -142,7 +144,8 @@ async.series([
         server.register({
             register: require('tv'),
             options: {
-                endpoint: '/system/console'
+                host: process.env.DOMAIN,
+                endpoint: '/api/console'
             }
         }, function (err) {
             cb(err);
@@ -199,6 +202,7 @@ async.series([
         // default sources
         var defaults = [
             util.format('ws://%s:*', os.hostname()),
+            util.format('ws://%s:*', process.env.DOMAIN),
             'ws://localhost:*',
             'ws://127.0.0.1:*',
             'self',
