@@ -133,7 +133,7 @@ async.series([
         server.register({
             register: require('lout'),
             options: {
-                endpoint: '/api/docs'
+                endpoint: '/api'
             }
         }, function (err) {
             cb(err);

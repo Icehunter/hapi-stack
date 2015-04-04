@@ -23,7 +23,7 @@ module.exports = function () {
             'GET',
             'POST'
         ], // Must handle both GET and POST
-        path: '/login/twitter', // The callback endpoint registered with the provider
+        path: '/api/login/twitter', // The callback endpoint registered with the provider
         config: {
             auth: {
                 strategies: [
@@ -37,7 +37,7 @@ module.exports = function () {
             'GET',
             'POST'
         ], // Must handle both GET and POST
-        path: '/login/google', // The callback endpoint registered with the provider
+        path: '/api/login/google', // The callback endpoint registered with the provider
         config: {
             auth: {
                 strategies: [

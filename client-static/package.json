@@ -1,0 +1,19 @@
+{
+    "name": "hapi-stack-client",
+    "version": "1.0.0",
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Icehunter/hapi-stack.git"
+    },
+    "author": "Ryan Wilson <syndicated.life@gmail.com> (http://syndicatedlife.com/)",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Icehunter/hapi-stack/issues"
+    },
+    "homepage": "https://github.com/Icehunter/hapi-stack",
+    "devDependencies": {},
+    "dependencies": {
+        "bower": "^1.4.1"
+    }
+}

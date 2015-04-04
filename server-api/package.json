@@ -1,5 +1,5 @@
 {
-    "name": "hapi-stack",
+    "name": "hapi-stack-server",
     "version": "1.0.0",
     "description": "",
     "main": "server.js",

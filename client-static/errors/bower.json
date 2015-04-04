@@ -1,0 +1,16 @@
+{
+    "name": "hapi-stack-client-errors",
+    "version": "1.0.0",
+    "homepage": "https://github.com/Icehunter/hapi-stack",
+    "authors": [
+        "Ryan Wilson <syndicated.life@gmail.com>"
+    ],
+    "license": "MIT",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "test",
+        "tests"
+    ]
+}
