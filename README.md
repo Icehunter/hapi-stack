@@ -3,6 +3,7 @@
 ### basic setup:
 
 ```
+cd server-api
 npm i
 grunt replace
 node server.js
