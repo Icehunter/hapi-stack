@@ -38,17 +38,6 @@ var ResolveRoutes = function (server) {
         }
     });
 
-    // spa support
-    server.route({
-        method: 'GET',
-        path: '/{param*}',
-        handler: {
-            directory: {
-                path: './static'
-            }
-        }
-    });
-
     // requried for angularjs preflight calls
     server.route({
         method: 'OPTIONS',
