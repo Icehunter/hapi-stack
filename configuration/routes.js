@@ -4,16 +4,11 @@ var controllersPath = '../app/controllers/';
 var routes = [];
 var _ = require('underscore');
 
-function cleanRoutePath(route) {
-    route.path = ('/' + route.path).replace(/\/+/gi, '/');
-    return route;
-}
-
 function loginRoutes(server) {
     var loginController = require(controllersPath + 'login-controller')(server);
 
     _.each(loginController.routes, function (route) {
-        routes.push(cleanRoutePath(route));
+        server.route(route);
     });
 }
 
@@ -21,13 +16,13 @@ function systemRoutes(server) {
     var systemController = require(controllersPath + 'system-controller')(server);
 
     _.each(systemController.routes, function (route) {
-        routes.push(cleanRoutePath(route));
+        server.route(route);
     });
 }
 
 var ResolveRoutes = function (server) {
     // favicon
-    routes.push({
+    server.route({
         method: 'GET',
         path: '/favicon.ico',
         handler: {
@@ -41,7 +36,7 @@ var ResolveRoutes = function (server) {
     });
 
     // spa support
-    routes.push({
+    server.route({
         method: 'GET',
         path: '/{param*}',
         handler: {
@@ -52,7 +47,7 @@ var ResolveRoutes = function (server) {
     });
 
     // requried for angularjs preflight calls
-    routes.push({
+    server.route({
         method: 'OPTIONS',
         path: '/{param*}',
         handler: function (request, reply) {

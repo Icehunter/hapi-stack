@@ -30,7 +30,7 @@ module.exports = function (server) {
     var _this = exports;
     _this.routes = [{
         method: 'GET',
-        path: 'system/info',
+        path: '/api/status',
         config: {
             handler: SystemInfo
         }

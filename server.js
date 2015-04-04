@@ -201,10 +201,6 @@ async.series([
     function (cb) {
         // default sources
         var defaults = [
-            util.format('ws://%s:*', os.hostname()),
-            util.format('ws://%s:*', process.env.DOMAIN),
-            'ws://localhost:*',
-            'ws://127.0.0.1:*',
             'self',
             '*.bootstrapcdn.com',
             '*.google.com',
@@ -218,10 +214,18 @@ async.series([
         server.register({
             register: require('blankie'),
             options: {
-                connectSrc: defaults,
-                fontSrc: defaults,
-                scriptSrc: defaults,
-                styleSrc: defaults
+                connectSrc: defaults.slice(0).concat([
+                    util.format('ws://%s:*', os.hostname()),
+                    util.format('ws://%s:*', process.env.DOMAIN),
+                    'ws://localhost:*',
+                    'ws://127.0.0.1:*'
+                ]),
+                fontSrc: defaults.slice(0),
+                scriptSrc: defaults.slice(0),
+                styleSrc: defaults.slice(0),
+                imgSrc: defaults.slice(0).concat([
+                    'data:'
+                ])
             }
         }, function (err) {
             cb(err);
@@ -337,7 +341,7 @@ async.series([
     },
     // resolve routes
     function (cb) {
-        server.route(require('./configuration/routes')(server).resolveRoutes());
+        require('./configuration/routes')().resolveRoutes(server);
         cb();
     }
 ], function (err) {
