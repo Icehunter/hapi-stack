@@ -21,6 +21,9 @@ function systemRoutes(server) {
 }
 
 var ResolveRoutes = function (server) {
+    var cors = server.settings.connections.routes.cors;
+    var headers = [].concat(cors.headers).concat(cors.additionalHeaders);
+
     // favicon
     server.route({
         method: 'GET',
@@ -53,8 +56,8 @@ var ResolveRoutes = function (server) {
         handler: function (request, reply) {
             reply()
                 .type('text/plain')
-                .header('Access-Control-Allow-Origin', '*')
-                .header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, token');
+                .header('Access-Control-Allow-Origin', cors.origin.join(' '))
+                .header('Access-Control-Allow-Headers', headers.join(', '));
         }
     });
 
