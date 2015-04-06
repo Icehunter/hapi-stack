@@ -9,7 +9,8 @@
         "no-undefined": true,
         "no-underscore-dangle": true,
         "no-process-exit": true,
-        "camelcase": true
+        "camelcase": true,
+        "no-shadow": false
     },
     "env": {
         "browser": true,

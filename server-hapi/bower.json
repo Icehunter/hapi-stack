@@ -1,10 +1,8 @@
 {
-    "name": "hapi-stack-client-www",
+    "name": "server-client",
     "version": "1.0.0",
     "homepage": "https://github.com/Icehunter/hapi-stack",
-    "authors": [
-        "Ryan Wilson <syndicated.life@gmail.com>"
-    ],
+    "author": "Ryan Wilson <syndicated.life@gmail.com> (http://syndicatedlife.com/)",
     "license": "MIT",
     "ignore": [
         "**/.*",
@@ -12,5 +10,9 @@
         "bower_components",
         "test",
         "tests"
-    ]
+    ],
+    "dependencies": {
+        "dustjs-helpers": "~1.6.2",
+        "dustjs-linkedin": "~2.6.2"
+    }
 }

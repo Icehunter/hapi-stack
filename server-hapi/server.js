@@ -13,7 +13,9 @@ var async = require('async');
 // internal modules
 var formatters = require('./app/helpers/formatters')();
 
-var server;
+var SERVER;
+var API;
+var CLIENT;
 
 function handleConfiguration(env) {
     for (var key in env) {
@@ -44,19 +46,9 @@ async.series([
             }
         });
     },
-    // setup conection options and apply TLS if required
+    // setup conection options and apply TLS if required for API and CLIENT
     function (cb) {
-        var connectionOptions = {
-            host: process.env.HOST || 'localhost',
-            port: process.env.PORT || 8000
-        };
-        if (process.env.HTTPS === 'true') {
-            connectionOptions.tls = {
-                key: fs.readFileSync(path.join(__dirname, './certificates/server.key')),
-                cert: fs.readFileSync(path.join(__dirname, './certificates/server.crt'))
-            };
-        }
-        server = new Hapi.Server({
+        SERVER = new Hapi.Server({
             connections: {
                 router: {
                     isCaseSensitive: false,
@@ -82,20 +74,59 @@ async.series([
                 }
             }
         });
-        server.connection(connectionOptions);
-        cb();
+        async.series([
+            function (cb) {
+                var connectionOptions = {
+                    host: process.env.API_HOST || 'localhost',
+                    port: process.env.API_PORT || 8000
+                };
+                if (process.env.API_HTTPS === 'true') {
+                    connectionOptions.tls = {
+                        key: fs.readFileSync(path.join(__dirname, './certificates/SERVER.key')),
+                        cert: fs.readFileSync(path.join(__dirname, './certificates/SERVER.crt'))
+                    };
+                }
+                API = SERVER.connection(connectionOptions);
+                cb();
+            },
+            function (cb) {
+                var connectionOptions = {
+                    host: process.env.CLIENT_HOST || 'localhost',
+                    port: process.env.CLIENT_PORT || 3000
+                };
+                if (process.env.CLIENT_HTTPS === 'true') {
+                    connectionOptions.tls = {
+                        key: fs.readFileSync(path.join(__dirname, './certificates/client.key')),
+                        cert: fs.readFileSync(path.join(__dirname, './certificates/client.crt'))
+                    };
+                }
+                CLIENT = SERVER.connection(connectionOptions);
+                CLIENT.views({
+                    defaultExtension: 'jsx',
+                    engines: {
+                        jsx: require('hapi-react')()
+                    },
+                    isCached: false,
+                    path: path.join(__dirname, './views'),
+                    relativeTo: __dirname
+                });
+                cb();
+            }
+        ], function (err) {
+            cb(err);
+        });
     },
-    // setup server error handlers
+    // setup SERVER error handlers
     function (cb) {
         function handleError(err, fatal) {
             var error = formatters.formatError(err);
-            server.log('error', error);
+            SERVER.log('error', error);
             if (fatal) {
                 process.exit(1);
             }
         }
 
-        server.on('internalError', function (request, err) {
+        SERVER.on('internalError', function (request, err) {
             handleError(err);
             // if you want for format an error with html rather than JSON you can override:
             // request.response.output.payload
@@ -112,7 +143,7 @@ async.series([
             //         payload: {
             //             statusCode: 500,
             //             error: 'Internal Server Error',
-            //             message: 'An internal server error occurred'
+            //             message: 'An internal SERVER error occurred'
             //         },
             //         headers: {}
             //     }
@@ -124,13 +155,13 @@ async.series([
         });
 
         process.on('SIGTERM', function () {
-            server.log('info', 'Server Shutting Down');
+            SERVER.log('info', 'Server Shutting Down');
         });
         cb();
     },
     // register api documentation
     function (cb) {
-        server.register({
+        API.register({
             register: require('lout'),
             options: {
                 endpoint: '/api'
@@ -139,9 +170,9 @@ async.series([
             cb(err);
         });
     },
-    // register server console Web UI
+    // register SERVER console Web UI
     function (cb) {
-        server.register({
+        API.register({
             register: require('tv'),
             options: {
                 host: process.env.DOMAIN,
@@ -153,11 +184,15 @@ async.series([
     },
     // setup loggers
     function (cb) {
-        server.register({
+        SERVER.register({
             register: require('good'),
             options: {
-                opsInterval: 1000,
                 reporters: [{
+                    reporter: require('good-file'),
+                    args: ['./logs/ops.log', {
+                        ops: '*'
+                    }]
+                }, {
                     reporter: require('good-console'),
                     args: [{
                         log: '*',
@@ -166,25 +201,19 @@ async.series([
                     }]
                 }, {
                     reporter: require('good-file'),
-                    args: [
-                        './logs/debug.log', {
-                            log: 'debug'
-                        }
-                    ]
+                    args: ['./logs/debug.log', {
+                        log: 'debug'
+                    }]
                 }, {
                     reporter: require('good-file'),
-                    args: [
-                        './logs/info.log', {
-                            log: 'info'
-                        }
-                    ]
+                    args: ['./logs/info.log', {
+                        log: 'info'
+                    }]
                 }, {
                     reporter: require('good-file'),
-                    args: [
-                        './logs/errors.log', {
-                            error: 'error'
-                        }
-                    ]
+                    args: ['./logs/error.log', {
+                        error: 'error'
+                    }]
                 }]
             }
         }, function (err) {
@@ -193,7 +222,7 @@ async.series([
     },
     // register superagent plugin
     function (cb) {
-        server.register(require('scooter'), function (err) {
+        SERVER.register(require('scooter'), function (err) {
             cb(err);
         });
     },
@@ -211,7 +240,7 @@ async.series([
             '*.gstatic.com',
             'unsafe-inline'
         ];
-        server.register({
+        SERVER.register({
             register: require('blankie'),
             options: {
                 connectSrc: defaults.slice(0).concat([
@@ -233,7 +262,7 @@ async.series([
     },
     // register api protection schemas
     function (cb) {
-        server.register(require('hapi-auth-signature'), function (err) {
+        SERVER.register(require('hapi-auth-signature'), function (err) {
             if (err) {
                 cb(err);
             }
@@ -246,8 +275,8 @@ async.series([
                 }];
                 var RSA = [];
                 async.series([
-                    function () {
-                        server.auth.strategy('hmac', 'signature', {
+                    function (cb) {
+                        SERVER.auth.strategy('hmac', 'signature', {
                             validateFunc: function (request, parsedSignature, callback) {
                                 var keyId = parsedSignature.keyId;
                                 var credentials = {};
@@ -277,8 +306,8 @@ async.series([
                         });
                         cb();
                     },
-                    function () {
-                        server.auth.strategy('hmac', 'signature', {
+                    function (cb) {
+                        SERVER.auth.strategy('rsa', 'signature', {
                             validateFunc: function (request, parsedSignature, callback) {
                                 var keyId = parsedSignature.keyId;
                                 var credentials = {};
@@ -315,33 +344,33 @@ async.series([
         });
     },
     // if using social signin remove cb() and uncomment this and loginRoutess() in configuratin/routes.js
-    function (cb) {
-        cb();
-        // server.register(require('bell'), function (err) {
-        //     if (err) {
-        //         cb(err);
-        //     }
-        //     else {
-        //         var socialSites = require('./social')(server);
-        //         var counter = 0;
-        //         async.whilst(function () {
-        //                 return counter < socialSites.length;
-        //             },
-        //             function (callback) {
-        //                 var site = socialSites[counter];
-        //                 server.auth.strategy(site.provider, 'bell', site);
-        //                 counter++;
-        //                 callback();
-        //             },
-        //             function (err) {
-        //                 cb(err);
-        //             });
-        //     }
-        // });
-    },
+    // function (cb) {
+    //     CLIENT.register(require('bell'), function (err) {
+    //         if (err) {
+    //             cb(err);
+    //         }
+    //         else {
+    //             var socialSites = require('./social')(SERVER);
+    //             var counter = 0;
+    //             async.whilst(function () {
+    //                     return counter < socialSites.length;
+    //                 },
+    //                 function (callback) {
+    //                     var site = socialSites[counter];
+    //                     CLIENT.auth.strategy(site.provider, 'bell', site);
+    //                     counter++;
+    //                     callback();
+    //                 },
+    //                 function (err) {
+    //                     cb(err);
+    //                 });
+    //         }
+    //     });
+    // },
     // resolve routes
     function (cb) {
-        require('./configuration/routes')().resolveRoutes(server);
+        require('./configuration/routes-api')().resolveRoutes(API);
+        require('./configuration/routes-client')().resolveRoutes(CLIENT);
         cb();
     }
 ], function (err) {
@@ -351,8 +380,11 @@ async.series([
     }
     else {
         // startem up the shields!!!
-        server.start(function () {
-            server.log('info', 'Server Listening @ Port: ' + server.info.port + ' [' + (process.env.NODE_ENV || 'development') + ']');
+        var ENV = process.env.NODE_ENV || 'development';
+        SERVER.start(function () {
+            SERVER.log('info', util.format('SERVER Listening [%s:%s]', ENV, SERVER.info.port));
+            API.log('info', util.format('API Server Listening [%s:%s]', ENV, API.info.port));
+            CLIENT.log('info', util.format('CLIENT Server Listening [%s:%s]', ENV, CLIENT.info.port));
         });
     }
 });

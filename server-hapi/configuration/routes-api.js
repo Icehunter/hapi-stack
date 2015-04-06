@@ -1,16 +1,8 @@
 'use strict';
 
-var controllersPath = '../app/controllers/';
+var controllersPath = '../app/controllers/api/';
 var routes = [];
 var _ = require('underscore');
-
-function loginRoutes(server) {
-    var loginController = require(controllersPath + 'login-controller')(server);
-
-    _.each(loginController.routes, function (route) {
-        server.route(route);
-    });
-}
 
 function systemRoutes(server) {
     var systemController = require(controllersPath + 'system-controller')(server);
@@ -50,7 +42,6 @@ var ResolveRoutes = function (server) {
         }
     });
 
-    // loginRoutes(server);
     systemRoutes(server);
     return routes;
 };
