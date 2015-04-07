@@ -1,6 +1,6 @@
 'use strict';
 
-var SERVER;
+var server;
 
 var version = require('../../package.json').version;
 var tool = require('cloneextend');
@@ -15,7 +15,7 @@ var Handle = function (reply, err, data, code) {
     };
     if (err) {
         var error = formatters.formatError(err);
-        SERVER.log('error', error);
+        server.log('error', error);
         meta = tool.extend(meta, {
             meta: error
         });
@@ -36,7 +36,7 @@ var Handle = function (reply, err, data, code) {
 };
 
 module.exports = function (server) {
-    SERVER = server;
+    server = server;
     var _this = exports;
     _this.handle = Handle;
     return _this;

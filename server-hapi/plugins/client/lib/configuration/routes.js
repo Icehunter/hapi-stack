@@ -1,13 +1,21 @@
 'use strict';
 
-var controllersPath = '../app/controllers/api/';
+var controllersPath = '../controllers/';
 var routes = [];
 var _ = require('underscore');
 
-function systemRoutes(server) {
-    var systemController = require(controllersPath + 'system-controller')(server);
+// function loginRoutes(server) {
+//     var loginController = require(controllersPath + 'login-controller')(server);
+//
+//     _.each(loginController.routes, function (route) {
+//         server.route(route);
+//     });
+// }
 
-    _.each(systemController.routes, function (route) {
+function pageRoutes(server) {
+    var pageController = require(controllersPath + 'page-controller')(server);
+
+    _.each(pageController.routes, function (route) {
         server.route(route);
     });
 }
@@ -30,6 +38,19 @@ var ResolveRoutes = function (server) {
         }
     });
 
+    // static serving support
+    server.route({
+        method: '*',
+        path: '/{param*}',
+        handler: {
+            directory: {
+                path: './static',
+                listing: false,
+                index: true
+            }
+        }
+    });
+
     // requried for angularjs preflight calls
     server.route({
         method: 'OPTIONS',
@@ -42,7 +63,8 @@ var ResolveRoutes = function (server) {
         }
     });
 
-    systemRoutes(server);
+    // loginRoutes(server);
+    pageRoutes(server);
     return routes;
 };
 

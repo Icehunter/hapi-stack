@@ -10,7 +10,7 @@ openssl x509 -req -days 365 -passin pass:password -in ca.csr -out ca.crt -signke
 
 # Create a Server Certificate
 openssl genrsa -des3 -out server.key -passout pass:password 2048
-openssl req -new -subj '/C=US/ST=State/L=City/CN=api.hapi-domain.com' -passin pass:password -key server.key -out server.csr
+openssl req -new -subj '/C=US/ST=State/L=City/CN=hapi-domain.com' -passin pass:password -key server.key -out server.csr
 
 # Remove Passphrases
 cp server.key server.key.org
@@ -36,5 +36,18 @@ openssl x509 -req -days 365 -in client.csr -signkey client.key -out client.crt
 # Generate Public Key
 openssl rsa -in client.key -pubout > client.pub
 
+# Create a SocketIO Certificate
+openssl genrsa -des3 -out socketio.key -passout pass:password 2048
+openssl req -new -subj '/C=US/ST=State/L=City/CN=hapi-domain.com' -passin pass:password -key socketio.key -out socketio.csr
+
+# Remove Passphrases
+cp socketio.key socketio.key.org
+openssl rsa -passin pass:password -in socketio.key.org -out socketio.key
+
+# Generate Self-signed Certificate
+openssl x509 -req -days 365 -in socketio.csr -signkey socketio.key -out socketio.crt
+
+# Generate Public Key
+openssl rsa -in socketio.key -pubout > socketio.pub
 
 cd ..

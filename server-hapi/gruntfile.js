@@ -6,26 +6,30 @@ module.exports = function (grunt) {
     var ENV = require('./replacements/' + (grunt.option('env') || 'development') + '/env.json');
     var commonENV = require('./replacements/common/env.json');
 
+    var commonFILES = [
+        'app/**/*.js',
+        'configuration/**/*.js',
+        'plugins/api/index.js',
+        'plugins/api/lib/**/*.js',
+        'plugins/client/index.js',
+        'plugins/client/lib/**/*.js',
+        'plugins/socketio/index.js',
+        'plugins/socketio/lib/**/*.js',
+        'connections.js',
+        'gruntfile.js',
+        'server.js'
+    ];
+
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         eslint: {
             options: {
                 configFile: './.eslintrc'
             },
-            target: [
-                'app/**/*.js',
-                'configuration/**/*.js',
-                'gruntfile.js',
-                'server.js'
-            ]
+            target: commonFILES
         },
         jsbeautifier: {
-            files: [
-                'app/**/*.js',
-                'configuration/**/*.js',
-                'gruntfile.js',
-                'server.js'
-            ],
+            files: commonFILES,
             options: {
                 config: './.jsbeautifyrc'
             }
@@ -54,27 +58,13 @@ module.exports = function (grunt) {
         },
         watch: {
             default: {
-                files: [
-                    '.jsbeautifyrc',
-                    '.jshintrc',
-                    'app/**/*.js',
-                    'configuration/**/*.js',
-                    'gruntfile.js',
-                    'server.js'
-                ],
+                files: commonFILES,
                 tasks: [
                     'common'
                 ]
             },
             test: {
-                files: [
-                    '.jsbeautifyrc',
-                    '.jshintrc',
-                    'app/**/*.js',
-                    'configuration/**/*.js',
-                    'gruntfile.js',
-                    'server.js'
-                ],
+                files: commonFILES,
                 tasks: [
                     'test'
                 ]

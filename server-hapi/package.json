@@ -57,6 +57,7 @@
         "react": "^0.13.1",
         "reloadable-env": "^0.1.0",
         "scooter": "^2.0.1",
+        "socket.io": "^1.3.5",
         "tv": "^4.1.0",
         "underscore": "^1.8.3",
         "wreck": "^5.4.0"

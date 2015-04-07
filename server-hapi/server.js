@@ -12,10 +12,7 @@ var async = require('async');
 
 // internal modules
 var formatters = require('./app/helpers/formatters')();
-
-var SERVER;
-var API;
-var CLIENT;
+var server;
 
 function handleConfiguration(env) {
     for (var key in env) {
@@ -46,9 +43,9 @@ async.series([
             }
         });
     },
-    // setup conection options and apply TLS if required for API and CLIENT
+    // setup conection options and apply TLS if required for API and CLIENT, SOCKETS
     function (cb) {
-        SERVER = new Hapi.Server({
+        server = new Hapi.Server({
             connections: {
                 router: {
                     isCaseSensitive: false,
@@ -58,7 +55,9 @@ async.series([
                     cors: {
                         origin: [
                             os.hostname(),
-                            process.env.DOMAIN,
+                            process.env.API_DOMAIN,
+                            process.env.CLIENT_DOMAIN,
+                            process.env.SOCKETIO_DOMAIN,
                             'localhost',
                             '127.0.0.1'
                         ],
@@ -74,67 +73,19 @@ async.series([
                 }
             }
         });
-        async.series([
-            function (cb) {
-                var connectionOptions = {
-                    host: process.env.API_HOST || 'localhost',
-                    port: process.env.API_PORT || 8000
-                };
-                if (process.env.API_HTTPS === 'true') {
-                    connectionOptions.tls = {
-                        key: fs.readFileSync(path.join(__dirname, './certificates/SERVER.key')),
-                        cert: fs.readFileSync(path.join(__dirname, './certificates/SERVER.crt'))
-                    };
-                }
-                API = SERVER.connection(connectionOptions);
-                cb();
-            },
-            function (cb) {
-                var connectionOptions = {
-                    host: process.env.CLIENT_HOST || 'localhost',
-                    port: process.env.CLIENT_PORT || 3000
-                };
-                if (process.env.CLIENT_HTTPS === 'true') {
-                    connectionOptions.tls = {
-                        key: fs.readFileSync(path.join(__dirname, './certificates/client.key')),
-                        cert: fs.readFileSync(path.join(__dirname, './certificates/client.crt'))
-                    };
-                }
-                CLIENT = SERVER.connection(connectionOptions);
-
-                var caching = (process.env.NODE_ENV === 'production') ? true : false;
-                var engineOptions = {
-                    caching: caching
-                };
-                var engine = require('hapijs-react-views')(engineOptions);
-
-                CLIENT.views({
-                    defaultExtension: 'jsx',
-                    engines: {
-                        jsx: engine,
-                        js: engine
-                    },
-                    isCached: caching,
-                    path: path.join(__dirname, './views'),
-                    relativeTo: __dirname
-                });
-                cb();
-            }
-        ], function (err) {
-            cb(err);
-        });
+        cb();
     },
-    // setup SERVER error handlers
+    // setup server error handlers
     function (cb) {
         function handleError(err, fatal) {
             var error = formatters.formatError(err);
-            SERVER.log('error', error);
+            server.log('error', error);
             if (fatal) {
                 process.exit(1);
             }
         }
 
-        SERVER.on('internalError', function (request, err) {
+        server.on('internalError', function (request, err) {
             handleError(err);
             // if you want for format an error with html rather than JSON you can override:
             // request.response.output.payload
@@ -151,7 +102,7 @@ async.series([
             //         payload: {
             //             statusCode: 500,
             //             error: 'Internal Server Error',
-            //             message: 'An internal SERVER error occurred'
+            //             message: 'An internal server error occurred'
             //         },
             //         headers: {}
             //     }
@@ -163,36 +114,13 @@ async.series([
         });
 
         process.on('SIGTERM', function () {
-            SERVER.log('info', 'Server Shutting Down');
+            server.log('info', 'Server Shutting Down');
         });
         cb();
     },
-    // register api documentation
-    function (cb) {
-        API.register({
-            register: require('lout'),
-            options: {
-                endpoint: '/api'
-            }
-        }, function (err) {
-            cb(err);
-        });
-    },
-    // register SERVER console Web UI
-    function (cb) {
-        API.register({
-            register: require('tv'),
-            options: {
-                host: process.env.DOMAIN,
-                endpoint: '/api/console'
-            }
-        }, function (err) {
-            cb(err);
-        });
-    },
     // setup loggers
     function (cb) {
-        SERVER.register({
+        server.register({
             register: require('good'),
             options: {
                 reporters: [{
@@ -228,9 +156,40 @@ async.series([
             cb(err);
         });
     },
+    // setup connections and connection plugins
+    function (cb) {
+        var errors = [];
+
+        function registerPlugin(key, connection) {
+            connection.register({
+                register: require('./plugins/' + key),
+                select: [
+                    key
+                ]
+            }, function (err) {
+                if (err) {
+                    errors.push(err);
+                }
+                else {
+                    connection.log('info', util.format('%s Listening [%s:%s]', key.toUpperCase(), process.env.NODE_ENV || 'development', connection.info.port));
+                }
+            });
+        }
+        require('./connections')(server, function (err, connections) {
+            if (err) {
+                cb(err);
+            }
+            else {
+                for (var index in connections) {
+                    registerPlugin(connections[index].key, connections[index].connection);
+                }
+                cb(errors.length ? errors : null);
+            }
+        });
+    },
     // register superagent plugin
     function (cb) {
-        SERVER.register(require('scooter'), function (err) {
+        server.register(require('scooter'), function (err) {
             cb(err);
         });
     },
@@ -248,12 +207,14 @@ async.series([
             '*.gstatic.com',
             'unsafe-inline'
         ];
-        SERVER.register({
+        server.register({
             register: require('blankie'),
             options: {
                 connectSrc: defaults.slice(0).concat([
                     util.format('ws://%s:*', os.hostname()),
-                    util.format('ws://%s:*', process.env.DOMAIN),
+                    util.format('ws://%s:*', process.env.API_DOMAIN),
+                    util.format('ws://%s:*', process.env.CLIENT_DOMAIN),
+                    util.format('ws://%s:*', process.env.SOCKETIO_DOMAIN),
                     'ws://localhost:*',
                     'ws://127.0.0.1:*'
                 ]),
@@ -270,7 +231,7 @@ async.series([
     },
     // register api protection schemas
     function (cb) {
-        SERVER.register(require('hapi-auth-signature'), function (err) {
+        server.register(require('hapi-auth-signature'), function (err) {
             if (err) {
                 cb(err);
             }
@@ -284,7 +245,7 @@ async.series([
                 var RSA = [];
                 async.series([
                     function (cb) {
-                        SERVER.auth.strategy('hmac', 'signature', {
+                        server.auth.strategy('hmac', 'signature', {
                             validateFunc: function (request, parsedSignature, callback) {
                                 var keyId = parsedSignature.keyId;
                                 var credentials = {};
@@ -315,7 +276,7 @@ async.series([
                         cb();
                     },
                     function (cb) {
-                        SERVER.auth.strategy('rsa', 'signature', {
+                        server.auth.strategy('rsa', 'signature', {
                             validateFunc: function (request, parsedSignature, callback) {
                                 var keyId = parsedSignature.keyId;
                                 var credentials = {};
@@ -350,36 +311,6 @@ async.series([
                 });
             }
         });
-    },
-    // if using social signin remove cb() and uncomment this and loginRoutess() in configuratin/routes.js
-    // function (cb) {
-    //     CLIENT.register(require('bell'), function (err) {
-    //         if (err) {
-    //             cb(err);
-    //         }
-    //         else {
-    //             var socialSites = require('./social')(SERVER);
-    //             var counter = 0;
-    //             async.whilst(function () {
-    //                     return counter < socialSites.length;
-    //                 },
-    //                 function (callback) {
-    //                     var site = socialSites[counter];
-    //                     CLIENT.auth.strategy(site.provider, 'bell', site);
-    //                     counter++;
-    //                     callback();
-    //                 },
-    //                 function (err) {
-    //                     cb(err);
-    //                 });
-    //         }
-    //     });
-    // },
-    // resolve routes
-    function (cb) {
-        require('./configuration/routes-api')().resolveRoutes(API);
-        require('./configuration/routes-client')().resolveRoutes(CLIENT);
-        cb();
     }
 ], function (err) {
     if (err) {
@@ -388,11 +319,8 @@ async.series([
     }
     else {
         // startem up the shields!!!
-        var ENV = process.env.NODE_ENV || 'development';
-        SERVER.start(function () {
-            SERVER.log('info', util.format('SERVER Listening [%s:%s]', ENV, SERVER.info.port));
-            API.log('info', util.format('API Server Listening [%s:%s]', ENV, API.info.port));
-            CLIENT.log('info', util.format('CLIENT Server Listening [%s:%s]', ENV, CLIENT.info.port));
+        server.start(function () {
+            server.log('info', 'SERVER Initialized');
         });
     }
 });

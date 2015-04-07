@@ -1,21 +1,13 @@
 'use strict';
 
-var controllersPath = '../app/controllers/client/';
+var controllersPath = '../controllers/';
 var routes = [];
 var _ = require('underscore');
 
-// function loginRoutes(server) {
-//     var loginController = require(controllersPath + 'login-controller')(server);
-//
-//     _.each(loginController.routes, function (route) {
-//         server.route(route);
-//     });
-// }
+function systemRoutes(server) {
+    var systemController = require(controllersPath + 'system-controller')(server);
 
-function pageRoutes(server) {
-    var pageController = require(controllersPath + 'page-controller')(server);
-
-    _.each(pageController.routes, function (route) {
+    _.each(systemController.routes, function (route) {
         server.route(route);
     });
 }
@@ -27,7 +19,7 @@ var ResolveRoutes = function (server) {
     // favicon
     server.route({
         method: 'GET',
-        path: '/favicon.ico',
+        path: '/api/favicon.ico',
         handler: {
             file: './favicon.ico'
         },
@@ -38,23 +30,10 @@ var ResolveRoutes = function (server) {
         }
     });
 
-    // static serving support
-    server.route({
-        method: '*',
-        path: '/{param*}',
-        handler: {
-            directory: {
-                path: './static',
-                listing: false,
-                index: true
-            }
-        }
-    });
-
     // requried for angularjs preflight calls
     server.route({
         method: 'OPTIONS',
-        path: '/{param*}',
+        path: '/api/{param*}',
         handler: function (request, reply) {
             reply()
                 .type('text/plain')
@@ -63,8 +42,7 @@ var ResolveRoutes = function (server) {
         }
     });
 
-    // loginRoutes(server);
-    pageRoutes(server);
+    systemRoutes(server);
     return routes;
 };
 

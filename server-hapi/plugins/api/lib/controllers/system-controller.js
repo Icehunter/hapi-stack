@@ -1,6 +1,6 @@
 'use strict';
 
-var versionParser = require('../../helpers/version-parser')();
+var versionParser = require('../helpers/version-parser')();
 
 var async = require('async');
 var replyHelper;
@@ -26,7 +26,7 @@ var SystemInfo = function (request, reply) {
 };
 
 module.exports = function (server) {
-    replyHelper = require('../../helpers/reply-helper')(server);
+    replyHelper = require('../helpers/reply-helper')(server);
     var _this = exports;
     _this.routes = [{
         method: 'GET',

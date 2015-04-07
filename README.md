@@ -3,7 +3,7 @@
 ### basic setup:
 
 ```
-cd server-api
+cd server-hapi
 npm i
 grunt replace
 node server.js
