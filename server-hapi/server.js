@@ -101,12 +101,20 @@ async.series([
                     };
                 }
                 CLIENT = SERVER.connection(connectionOptions);
+
+                var caching = (process.env.NODE_ENV === 'production') ? true : false;
+                var engineOptions = {
+                    caching: caching
+                };
+                var engine = require('hapijs-react-views')(engineOptions);
+
                 CLIENT.views({
                     defaultExtension: 'jsx',
                     engines: {
-                        jsx: require('hapi-react')()
+                        jsx: engine,
+                        js: engine
                     },
-                    isCached: false,
+                    isCached: caching,
                     path: path.join(__dirname, './views'),
                     relativeTo: __dirname
                 });
