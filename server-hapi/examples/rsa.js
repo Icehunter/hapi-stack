@@ -18,7 +18,7 @@ server.route({
         console.log('Headers:', request.headers);
         console.log('Payload:', request.payload);
         console.log('Parsed:', parsed);
-        var pub = fs.readFileSync('../certificates/server.pub', 'ascii');
+        var pub = fs.readFileSync('../certificates/api.pub', 'ascii');
         console.log('Valid:', httpSignature.verifySignature(parsed, pub));
         reply({});
         process.exit(1);
@@ -40,7 +40,7 @@ server.start(function () {
     });
     httpSignature.sign(request, {
         // algorithm: 'hmac-sha512',
-        key: fs.readFileSync('../certificates/server.key', 'ascii'),
+        key: fs.readFileSync('../certificates/api.key', 'ascii'),
         keyId: 'rsa-key-1'
     });
     request.end(body);
