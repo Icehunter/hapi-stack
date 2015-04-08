@@ -7,16 +7,25 @@ var fs = require('fs');
 var os = require("os");
 var util = require('util');
 var path = require('path');
-var HTTPSignature = require('http-signature');
 var async = require('async');
+var _ = require('underscore');
 
 // internal modules
 var formatters = require('./app/helpers/formatters')();
 var server;
+var configuration = {};
 
 function handleConfiguration(env) {
     for (var key in env) {
         process.env[key] = env[key];
+    }
+}
+
+function handleError(err, fatal) {
+    var error = formatters.formatError(err);
+    server.log('error', error);
+    if (fatal) {
+        process.exit(1);
     }
 }
 
@@ -43,8 +52,46 @@ async.series([
             }
         });
     },
+    // load server config from env
+    function (cb) {
+        configuration.servers = [];
+        try {
+            var servers = JSON.parse(process.env.SERVERS);
+            _.each(servers, function (connection) {
+                configuration.servers.push(connection);
+            });
+            cb();
+        }
+        catch (err) {
+            cb(err);
+        }
+    },
+    // load plugin config from env
+    function (cb) {
+        configuration.plugins = [];
+        try {
+            var plugins = JSON.parse(process.env.PLUGINS);
+            _.each(plugins, function (plugin) {
+                configuration.plugins.push(plugin);
+            });
+            cb();
+        }
+        catch (err) {
+            cb(err);
+        }
+    },
     // setup conection options and apply TLS if required for API and CLIENT, SOCKETS
     function (cb) {
+        var origin = [
+            os.hostname(),
+            'localhost',
+            '127.0.0.1'
+        ];
+        _.each(configuration.servers, function (connection) {
+            if (!_.contains(origin, connection.domain)) {
+                origin.push(connection.domain);
+            }
+        });
         server = new Hapi.Server({
             connections: {
                 router: {
@@ -53,14 +100,7 @@ async.series([
                 },
                 routes: {
                     cors: {
-                        origin: [
-                            os.hostname(),
-                            process.env.API_DOMAIN,
-                            process.env.CLIENT_DOMAIN,
-                            process.env.SOCKETIO_DOMAIN,
-                            'localhost',
-                            '127.0.0.1'
-                        ],
+                        origin: origin,
                         additionalHeaders: ['X-Requested-With', 'token'],
                         credentials: true
                     },
@@ -77,13 +117,6 @@ async.series([
     },
     // setup server error handlers
     function (cb) {
-        function handleError(err, fatal) {
-            var error = formatters.formatError(err);
-            server.log('error', error);
-            if (fatal) {
-                process.exit(1);
-            }
-        }
 
         server.on('internalError', function (request, err) {
             handleError(err);
@@ -118,199 +151,65 @@ async.series([
         });
         cb();
     },
-    // setup loggers
-    function (cb) {
-        server.register({
-            register: require('good'),
-            options: {
-                reporters: [{
-                    reporter: require('good-file'),
-                    args: ['./logs/ops.log', {
-                        ops: '*'
-                    }]
-                }, {
-                    reporter: require('good-console'),
-                    args: [{
-                        log: '*',
-                        response: '*',
-                        error: '*'
-                    }]
-                }, {
-                    reporter: require('good-file'),
-                    args: ['./logs/debug.log', {
-                        log: 'debug'
-                    }]
-                }, {
-                    reporter: require('good-file'),
-                    args: ['./logs/info.log', {
-                        log: 'info'
-                    }]
-                }, {
-                    reporter: require('good-file'),
-                    args: ['./logs/error.log', {
-                        error: 'error'
-                    }]
-                }]
-            }
-        }, function (err) {
-            cb(err);
-        });
-    },
     // setup connections and connection plugins
     function (cb) {
-        var errors = [];
-
-        function registerPlugin(key, connection) {
-            connection.register({
-                register: require('./plugins/' + key),
-                select: [
-                    key
-                ]
-            }, function (err) {
-                if (err) {
-                    errors.push(err);
+        var index = 0;
+        var servers = configuration.servers;
+        async.whilst(
+            function () {
+                return index < servers.length;
+            },
+            function (cb) {
+                var connection = servers[index];
+                var connectionOptions = {
+                    host: connection.host,
+                    port: connection.port,
+                    labels: [
+                        connection.key
+                    ]
+                };
+                if (connection.https) {
+                    connectionOptions.tls = {
+                        key: fs.readFileSync(util.format('%s/%s.key', connection.certificatesPath, connection.key)),
+                        cert: fs.readFileSync(util.format('%s/%s.crt', connection.certificatesPath, connection.key))
+                    };
                 }
-                else {
-                    connection.log('info', util.format('%s Listening [%s:%s]', key.toUpperCase(), process.env.NODE_ENV || 'development', connection.info.port));
-                }
-            });
-        }
-        require('./connections')(server, function (err, connections) {
-            if (err) {
-                cb(err);
-            }
-            else {
-                for (var index in connections) {
-                    registerPlugin(connections[index].key, connections[index].connection);
-                }
-                cb(errors.length ? errors : null);
-            }
-        });
-    },
-    // register superagent plugin
-    function (cb) {
-        server.register(require('scooter'), function (err) {
-            cb(err);
-        });
-    },
-    // register proctection of cross domain scripts/sources
-    function (cb) {
-        // default sources
-        var defaults = [
-            'self',
-            '*.bootstrapcdn.com',
-            '*.google.com',
-            '*.googleapis.com',
-            '*.google.com',
-            '*.googleapis.com',
-            '*.gstatic.com',
-            '*.gstatic.com',
-            'unsafe-inline'
-        ];
-        server.register({
-            register: require('blankie'),
-            options: {
-                connectSrc: defaults.slice(0).concat([
-                    util.format('ws://%s:*', os.hostname()),
-                    util.format('ws://%s:*', process.env.API_DOMAIN),
-                    util.format('ws://%s:*', process.env.CLIENT_DOMAIN),
-                    util.format('ws://%s:*', process.env.SOCKETIO_DOMAIN),
-                    'ws://localhost:*',
-                    'ws://127.0.0.1:*'
-                ]),
-                fontSrc: defaults.slice(0),
-                scriptSrc: defaults.slice(0),
-                styleSrc: defaults.slice(0),
-                imgSrc: defaults.slice(0).concat([
-                    'data:'
-                ])
-            }
-        }, function (err) {
-            cb(err);
-        });
-    },
-    // register api protection schemas
-    function (cb) {
-        server.register(require('hapi-auth-signature'), function (err) {
-            if (err) {
-                cb(err);
-            }
-            else {
-                var HMAC = [{
-                    id: 0,
-                    username: 'monitor',
-                    clientID: 'cbe70b09-5089-46c1-b04e-e933cb570b8d',
-                    clientSecret: '164aefdd-ae33-47a3-ac23-7432f406e555'
-                }];
-                var RSA = [];
-                async.series([
-                    function (cb) {
-                        server.auth.strategy('hmac', 'signature', {
-                            validateFunc: function (request, parsedSignature, callback) {
-                                var keyId = parsedSignature.keyId;
-                                var credentials = {};
-                                var secretKey;
-                                // api users should be loaded from the database and cached
-                                HMAC.forEach(function (user) {
-                                    if (user.clientID === keyId) {
-                                        secretKey = user.clientSecret;
-                                        credentials = {
-                                            id: user.id,
-                                            username: user.username
-                                        };
-                                    }
-                                });
-                                if (!secretKey) {
-                                    callback(null, false);
-                                }
-                                else {
-                                    if (HTTPSignature.verifySignature(parsedSignature, secretKey)) {
-                                        callback(null, true, credentials);
-                                    }
-                                    else {
-                                        callback(null, false);
-                                    }
-                                }
-                            }
-                        });
-                        cb();
-                    },
-                    function (cb) {
-                        server.auth.strategy('rsa', 'signature', {
-                            validateFunc: function (request, parsedSignature, callback) {
-                                var keyId = parsedSignature.keyId;
-                                var credentials = {};
-                                var secretKey;
-                                // api users should be loaded from the database and cached
-                                RSA.forEach(function (user) {
-                                    if (user.clientID === keyId) {
-                                        secretKey = user.clientSecret;
-                                        credentials = {
-                                            id: user.id,
-                                            username: user.username
-                                        };
-                                    }
-                                });
-                                if (!secretKey) {
-                                    callback(null, false);
-                                }
-                                else {
-                                    if (HTTPSignature.verifySignature(parsedSignature, secretKey)) {
-                                        callback(null, true, credentials);
-                                    }
-                                    else {
-                                        callback(null, false);
-                                    }
-                                }
-                            }
-                        });
-                        cb();
-                    }
-                ], function () {
-                    cb();
+                server.connection(connectionOptions).register({
+                    register: require('./plugins/' + connection.key),
+                    select: [
+                        connection.key
+                    ]
+                }, function (err) {
+                    index++;
+                    cb(err);
                 });
-            }
-        });
+            },
+            function (err) {
+                cb(err);
+            });
+    },
+    // register plugins
+    function (cb) {
+        try {
+            var index = 0;
+            var plugins = configuration.plugins;
+            async.whilst(
+                function () {
+                    return index < plugins.length;
+                },
+                function (cb) {
+                    server.register(require('./plugins/' + plugins[index]), function (err) {
+                        index++;
+                        cb(err);
+                    });
+                },
+                function (err) {
+                    cb(err);
+                });
+        }
+        catch (err) {
+            cb(err);
+        }
     }
 ], function (err) {
     if (err) {
@@ -320,6 +219,11 @@ async.series([
     else {
         // startem up the shields!!!
         server.start(function () {
+            for (var index in server.connections) {
+                var connection = server.connections[index];
+                var key = connection.settings.labels[0];
+                server.log('info', util.format('%s Listening [%s:%s]', key.toUpperCase(), process.env.NODE_ENV || 'development', connection.info.port));
+            }
             server.log('info', 'SERVER Initialized');
         });
     }

@@ -12,8 +12,8 @@ exports.register = function (server, options, next) {
             io.on('connection', function (socket) {
                 // you should setup your handlers here
                 console.log(socket);
-                cb();
             });
+            cb();
         },
         // register special routes
         function (cb) {

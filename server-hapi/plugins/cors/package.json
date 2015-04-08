@@ -1,5 +1,5 @@
 {
-    "name": "server-hapi-client",
+    "name": "server-hapi-cors",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
