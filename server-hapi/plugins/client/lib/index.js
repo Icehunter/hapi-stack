@@ -21,7 +21,9 @@ exports.register = function (server, options, next) {
                     js: engine
                 },
                 isCached: caching,
-                path: path.join(__dirname, './views'),
+                layoutPath: path.join(__dirname, './views/layouts'),
+                partialsPath: path.join(__dirname, './views/partials'),
+                path: path.join(__dirname, './views/pages'),
                 relativeTo: __dirname
             });
             cb();

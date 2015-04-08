@@ -1,7 +1,7 @@
 'use strict';
 
 var Splash = function (request, reply) {
-    reply.view('pages/splash', {
+    reply.view('splash', {
         title: 'SPLASH'
     });
 };
