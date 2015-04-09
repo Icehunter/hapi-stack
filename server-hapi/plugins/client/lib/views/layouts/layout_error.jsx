@@ -3,18 +3,19 @@ var React = require('react');
 var Header = require('../partials/header.jsx');
 var Footer = require('../partials/footer.jsx');
 
-var DefaultLayout = React.createClass({
+var LayoutError = React.createClass({
     render: function() {
         return (
             <html>
                 <Header title={this.props.title} />
                 <body>
-                    <div id="content">{this.props.children}</div>
-                    <Footer />
+                    <div id="content-error">
+                        <span id="message">{this.props.message}</span>
+                    </div>
                 </body>
             </html>
         );
     }
 });
 
-module.exports = DefaultLayout;
+module.exports = LayoutError;

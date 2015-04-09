@@ -5,6 +5,11 @@ var async = require('async');
 
 exports.register = function (server, options, next) {
     async.series([
+        // set plugin path for plugin
+        function (cb) {
+            server.path(__dirname);
+            cb();
+        },
         // register api documentation
         function (cb) {
             server.register({

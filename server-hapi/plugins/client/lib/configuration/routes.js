@@ -40,7 +40,7 @@ var ResolveRoutes = function (server) {
 
     // static serving support
     server.route({
-        method: '*',
+        method: 'GET',
         path: '/{param*}',
         handler: {
             directory: {

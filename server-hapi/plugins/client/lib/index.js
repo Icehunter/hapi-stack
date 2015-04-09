@@ -6,6 +6,11 @@ var path = require('path');
 
 exports.register = function (server, options, next) {
     async.series([
+        // set plugin path for plugin
+        function (cb) {
+            server.path(__dirname);
+            cb();
+        },
         // register view engines
         function (cb) {
             var caching = (process.env.NODE_ENV === 'production') ? true : false;
@@ -55,6 +60,22 @@ exports.register = function (server, options, next) {
         // register routes
         function (cb) {
             require('./configuration/routes')().resolveRoutes(server);
+            cb();
+        },
+        // setup friendly error pages
+        function (cb) {
+            server.ext('onPreResponse', function (request, reply) {
+                var response = request.response;
+                if (response.isBoom) {
+                    var error = response;
+                    reply.view('error', {
+                        message: error.message
+                    });
+                }
+                else {
+                    reply.continue();
+                }
+            });
             cb();
         }
     ], function (err) {

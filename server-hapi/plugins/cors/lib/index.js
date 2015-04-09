@@ -9,6 +9,11 @@ var _ = require('underscore');
 
 exports.register = function (server, options, next) {
     async.series([
+        // set plugin path for plugin
+        function (cb) {
+            server.path(__dirname);
+            cb();
+        },
         // register superagent plugin
         function (cb) {
             server.register(require('scooter'), function (err) {
