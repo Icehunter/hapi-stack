@@ -92,7 +92,7 @@ async.series([
                 origin.push(connection.domain);
             }
         });
-        server = new Hapi.Server({
+        module.exports = server = new Hapi.Server({
             connections: {
                 router: {
                     isCaseSensitive: false,
