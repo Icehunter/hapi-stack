@@ -4,6 +4,7 @@
 var async = require('async');
 
 exports.register = function (server, options, next) {
+    server.setup = options.setup || {};
     async.series([
         // set plugin path for plugin
         function (cb) {

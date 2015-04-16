@@ -180,7 +180,7 @@ async.series([
                         connection.key
                     ],
                     options: {
-                        config: connection.config || {}
+                        setup: connection
                     }
                 }, function (err) {
                     index++;
