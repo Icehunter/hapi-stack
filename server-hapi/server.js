@@ -17,7 +17,7 @@ var configuration = {};
 
 function handleConfiguration(env) {
     for (var key in env) {
-        process.env[key] = env[key];
+        process.env[key] = JSON.stringify(env[key]);
     }
 }
 
@@ -178,7 +178,10 @@ async.series([
                     register: require('./plugins/' + connection.key),
                     select: [
                         connection.key
-                    ]
+                    ],
+                    options: {
+                        config: connection.config || {}
+                    }
                 }, function (err) {
                     index++;
                     cb(err);

@@ -45,6 +45,7 @@
         "good-console": "^4.1.0",
         "good-file": "^4.0.2",
         "good-http": "^4.0.0",
+        "handlebars": "^3.0.1",
         "hapi": "^8.4.0",
         "hapi-auth-signature": "^2.0.1",
         "hapijs-react-views": "^0.7.3",
