@@ -30,7 +30,7 @@ function getDependencyVersionInfo(parentPath, parentObject) {
 
 var GetVersionInfo = function () {
     var versionTree = {};
-    getDependencyVersionInfo(path.dirname(process.argv[1]), versionTree);
+    getDependencyVersionInfo(path.join(__dirname, '../../'), versionTree);
     return versionTree;
 };
 

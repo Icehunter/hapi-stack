@@ -18,31 +18,35 @@ exports.register = function (server, options, next) {
                 options: {
                     reporters: [{
                         reporter: require('good-file'),
-                        args: ['./logs/ops.log', {
+                        events: {
                             ops: '*'
-                        }]
+                        },
+                        config: './logs/ops.log'
                     }, {
                         reporter: require('good-console'),
-                        args: [{
+                        events: {
                             log: '*',
                             response: '*',
                             error: '*'
-                        }]
+                        }
                     }, {
                         reporter: require('good-file'),
-                        args: ['./logs/debug.log', {
+                        events: {
                             log: 'debug'
-                        }]
+                        },
+                        config: './logs/debug.log'
                     }, {
                         reporter: require('good-file'),
-                        args: ['./logs/info.log', {
+                        events: {
                             log: 'info'
-                        }]
+                        },
+                        config: './logs/info.log'
                     }, {
                         reporter: require('good-file'),
-                        args: ['./logs/error.log', {
+                        events: {
                             error: 'error'
-                        }]
+                        },
+                        config: './logs/error.log'
                     }]
                 }
             }, function (err) {

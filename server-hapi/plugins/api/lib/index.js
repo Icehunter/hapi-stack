@@ -1,7 +1,13 @@
 'use strict';
 
-// var internals = {};
+var pkg = require('../package.json');
+
+var internals = {};
 var async = require('async');
+
+function initalize(server) {
+    internals.logger.log('info', require('util').format('%s Initialized', server.setup.key.toUpperCase()));
+}
 
 exports.register = function (server, options, next) {
     server.setup = options.setup || {};
@@ -9,6 +15,38 @@ exports.register = function (server, options, next) {
         // set plugin path for plugin
         function (cb) {
             server.path(__dirname);
+            cb();
+        },
+        // setup namespaced loggers
+        function (cb) {
+            internals.logger = {
+                log: function (tags, data) {
+                    server.log(tags, {
+                        module: pkg.name,
+                        data: data
+                    });
+                },
+                error: function (tags, data) {
+                    server.error(tags, {
+                        module: pkg.name,
+                        data: data
+                    });
+                }
+            };
+            cb();
+        },
+        // handle post listen initialization
+        function (cb) {
+            async.whilst(
+                function () {
+                    return server.info.started === 0;
+                },
+                function (cb) {
+                    setTimeout(cb, 500);
+                },
+                function () {
+                    initalize(server);
+                });
             cb();
         },
         // register api documentation
@@ -45,5 +83,5 @@ exports.register = function (server, options, next) {
 };
 
 exports.register.attributes = {
-    pkg: require('../package.json')
+    pkg: pkg
 };
