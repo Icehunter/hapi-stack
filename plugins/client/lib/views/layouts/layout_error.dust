@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+{>"partials/header.dust"/}
+
+<body>
+    <div id="content-error">{+content/}</div>
+    {>"partials/footer.dust"/}
+</body>
+
+</html>

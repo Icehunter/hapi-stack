@@ -1,34 +1,43 @@
 'use strict';
+var Hapi, fs, http, httpSignature, server;
 
-var httpSignature = require('http-signature');
-var http = require('http');
-var fs = require('fs');
+httpSignature = require('http-signature');
 
-var Hapi = require('hapi');
-var server = new Hapi.Server();
+http = require('http');
+
+fs = require('fs');
+
+Hapi = require('hapi');
+
+server = new Hapi.Server();
+
 server.connection({
     host: '127.0.0.1',
     port: 1337
 });
+
 server.route({
     method: 'POST',
     path: '/test',
     handler: function (request, reply) {
-        var parsed = httpSignature.parseRequest(request);
+        var parsed, pub;
+        parsed = httpSignature.parseRequest(request);
         console.log('Headers:', request.headers);
         console.log('Payload:', request.payload);
         console.log('Parsed:', parsed);
-        var pub = fs.readFileSync('../certificates/api.pub', 'ascii');
+        pub = fs.readFileSync('../certificates/api.pub', 'ascii');
         console.log('Valid:', httpSignature.verifySignature(parsed, pub));
         reply({});
         process.exit(1);
     }
 });
+
 server.start(function () {
-    var body = JSON.stringify({
+    var body, request;
+    body = JSON.stringify({
         foo: 'bar'
     });
-    var request = new http.ClientRequest({
+    request = new http.ClientRequest({
         host: '127.0.0.1',
         port: 1337,
         path: '/test',
@@ -39,9 +48,9 @@ server.start(function () {
         }
     });
     httpSignature.sign(request, {
-        // algorithm: 'hmac-sha512',
         key: fs.readFileSync('../certificates/api.key', 'ascii'),
         keyId: 'rsa-key-1'
     });
     request.end(body);
 });
+

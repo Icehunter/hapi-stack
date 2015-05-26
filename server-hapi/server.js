@@ -1,36 +1,43 @@
 'use strict';
+var Hapi, _, async, configuration, formatters, fs, handleConfiguration, handleError, os, path, server, util;
 
-var Hapi = require('hapi');
+Hapi = require('hapi');
 
-// third party imports
-var fs = require('fs');
-var os = require("os");
-var util = require('util');
-var path = require('path');
-var async = require('async');
-var _ = require('underscore');
+fs = require('fs');
 
-// internal modules
-var formatters = require('./app/helpers/formatters')();
-var server;
-var configuration = {};
+os = require('os');
 
-function handleConfiguration(env) {
-    for (var key in env) {
+util = require('util');
+
+path = require('path');
+
+async = require('async');
+
+_ = require('underscore');
+
+handleConfiguration = function (env) {
+    var key;
+    for (key in env) {
         process.env[key] = JSON.stringify(env[key]);
     }
-}
+};
 
-function handleError(err, fatal) {
-    var error = formatters.formatError(err);
+handleError = function (err, fatal) {
+    var error;
+    error = formatters.formatError(err);
     server.log('error', error);
     if (fatal) {
         process.exit(1);
     }
-}
+};
+
+formatters = require('./app/helpers/formatters')();
+
+server = void 0;
+
+configuration = {};
 
 async.series([
-    // setup ENV watcher from file and monitor changes
     function (cb) {
         fs.exists(path.join(__dirname, './configuration/env.json'), function (exists) {
             if (exists) {
@@ -52,41 +59,39 @@ async.series([
             }
         });
     },
-    // load server config from env
     function (cb) {
+        var err, servers;
         configuration.servers = [];
         try {
-            var servers = JSON.parse(process.env.SERVERS);
+            servers = JSON.parse(process.env.SERVERS);
             _.each(servers, function (connection) {
                 configuration.servers.push(connection);
             });
             cb();
         }
-        catch (err) {
+        catch (_error) {
+            err = _error;
             cb(err);
         }
     },
-    // load plugin config from env
     function (cb) {
+        var err, plugins;
         configuration.plugins = [];
         try {
-            var plugins = JSON.parse(process.env.PLUGINS);
+            plugins = JSON.parse(process.env.PLUGINS);
             _.each(plugins, function (plugin) {
                 configuration.plugins.push(plugin);
             });
             cb();
         }
-        catch (err) {
+        catch (_error) {
+            err = _error;
             cb(err);
         }
     },
-    // setup conection options and apply TLS if required for API and CLIENT, SOCKETS
     function (cb) {
-        var origin = [
-            os.hostname(),
-            'localhost',
-            '127.0.0.1'
-        ];
+        var origin;
+        origin = [os.hostname(), 'localhost', '127.0.0.1'];
         _.each(configuration.servers, function (connection) {
             if (!_.contains(origin, connection.domain)) {
                 origin.push(connection.domain);
@@ -115,102 +120,70 @@ async.series([
         });
         cb();
     },
-    // setup server error handlers
     function (cb) {
-
         server.on('internalError', function (request, err) {
             handleError(err);
-            // if you want for format an error with html rather than JSON you can override:
-            // request.response.output.payload
-            // default is object.
-            // statusCode is in request.response.output.statusCode
-            // sample:
-            // var response = {
-            //     name: 'JsonWebTokenError',
-            //     message: 'invalid signature',
-            //     isBoom: true,
-            //     data: null,
-            //     output: {
-            //         statusCode: 500,
-            //         payload: {
-            //             statusCode: 500,
-            //             error: 'Internal Server Error',
-            //             message: 'An internal server error occurred'
-            //         },
-            //         headers: {}
-            //     }
-            // };
         });
-
         process.on('uncaughtException', function (err) {
             handleError(err, true);
         });
-
         process.on('SIGTERM', function () {
             server.log('info', 'Server Shutting Down');
         });
         cb();
     },
-    // setup connections and connection plugins
     function (cb) {
-        var index = 0;
-        var servers = configuration.servers;
-        async.whilst(
-            function () {
-                return index < servers.length;
-            },
-            function (cb) {
-                var connection = servers[index];
-                var connectionOptions = {
-                    host: connection.host,
-                    port: connection.port,
-                    labels: [
-                        connection.key
-                    ]
+        var index, servers;
+        index = 0;
+        servers = configuration.servers;
+        async.whilst((function () {
+            return index < servers.length;
+        }), (function (cb) {
+            var connection, connectionOptions;
+            connection = servers[index];
+            connectionOptions = {
+                host: connection.host,
+                port: connection.port,
+                labels: [connection.key]
+            };
+            if (connection.https) {
+                connectionOptions.tls = {
+                    key: fs.readFileSync(util.format('%s/%s.key', connection.certificatesPath, connection.key)),
+                    cert: fs.readFileSync(util.format('%s/%s.crt', connection.certificatesPath, connection.key))
                 };
-                if (connection.https) {
-                    connectionOptions.tls = {
-                        key: fs.readFileSync(util.format('%s/%s.key', connection.certificatesPath, connection.key)),
-                        cert: fs.readFileSync(util.format('%s/%s.crt', connection.certificatesPath, connection.key))
-                    };
+            }
+            server.connection(connectionOptions).register({
+                register: require(connection.key),
+                select: [connection.key],
+                options: {
+                    setup: connection
                 }
-                server.connection(connectionOptions).register({
-                    register: require('./plugins/' + connection.key),
-                    select: [
-                        connection.key
-                    ],
-                    options: {
-                        setup: connection
-                    }
-                }, function (err) {
+            }, function (err) {
+                index++;
+                cb(err);
+            });
+        }), function (err) {
+            cb(err);
+        });
+    },
+    function (cb) {
+        var err, index, plugins;
+        try {
+            index = 0;
+            plugins = configuration.plugins;
+            async.whilst((function () {
+                return index < plugins.length;
+            }), (function (cb) {
+                server.register(require(plugins[index]), function (err) {
                     index++;
                     cb(err);
                 });
-            },
-            function (err) {
+            }), function (err) {
                 cb(err);
             });
-    },
-    // register plugins
-    function (cb) {
-        try {
-            var index = 0;
-            var plugins = configuration.plugins;
-            async.whilst(
-                function () {
-                    return index < plugins.length;
-                },
-                function (cb) {
-                    server.register(require('./plugins/' + plugins[index]), function (err) {
-                        index++;
-                        cb(err);
-                    });
-                },
-                function (err) {
-                    cb(err);
-                });
         }
-        catch (err) {
+        catch (_error) {
+            err = _error;
             cb(err);
         }
     }
@@ -220,14 +193,15 @@ async.series([
         process.exit(1);
     }
     else {
-        // startem up the shields!!!
         server.start(function () {
-            for (var index in server.connections) {
-                var connection = server.connections[index];
-                var key = connection.settings.labels[0];
+            var connection, index, key;
+            for (index in server.connections) {
+                connection = server.connections[index];
+                key = connection.settings.labels[0];
                 server.log('info', util.format('%s Listening [%s:%s]', key.toUpperCase(), process.env.NODE_ENV || 'development', connection.info.port));
             }
             server.log('info', 'SERVER Initialized');
         });
     }
 });
+

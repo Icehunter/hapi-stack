@@ -1,16 +1,18 @@
 'use strict';
+var FormatError, moment;
 
-var moment = require('moment');
+moment = require('moment');
 
-var FormatError = function (err) {
-    var error = {
+FormatError = function (err) {
+    var error, key;
+    error = {
         success: false,
         message: err.message || 'UNKNOWN_ERROR',
         time_stamp: new Date(moment.utc().format())
     };
     if (err.constructor === {}.constructor && Object.keys(err).length) {
         error.errors = [];
-        for (var key in err) {
+        for (key in err) {
             error.errors.push(err[key]);
         }
     }
@@ -21,7 +23,9 @@ var FormatError = function (err) {
 };
 
 module.exports = function () {
-    var _this = exports;
+    var _this;
+    _this = exports;
     _this.formatError = FormatError;
     return _this;
 };
+

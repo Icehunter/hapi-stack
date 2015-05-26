@@ -1,3 +1,6 @@
 bower_components/*
 configuration/env.json
 node_modules/*
+*.js
+!gulpfile.js
+!gruntfile.js

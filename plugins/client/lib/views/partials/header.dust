@@ -1,0 +1,16 @@
+<head>
+    <title>{this.props.title}</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width" />
+    <meta content="Ryan Wilson" name="author" />
+    <meta content="width=device-width" name="viewport" />
+    <base target="_self" />
+    <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <!-- third party css -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- application css -->
+    <link href="/css/application.min.css" rel="stylesheet" />
+    <!-- third party scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <!-- application scripts -->
+    <script src="/js/scripts.js"></script>
+</head>
