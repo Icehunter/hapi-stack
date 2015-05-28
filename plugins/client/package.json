@@ -28,11 +28,11 @@
     },
     "dependencies": {
         "async": "^0.9.0",
-        "bell": "^2.7.1",
+        "bell": "^2.9.0",
         "coffee-script": "^1.9.2",
         "dustjs-helpers": "^1.7.1",
         "dustjs-linkedin": "^2.7.1",
-        "hapi": "^8.4.0",
+        "hapi": "^8.5.0",
         "hapi-dust": "^1.1.0",
         "underscore": "^1.8.3"
     }

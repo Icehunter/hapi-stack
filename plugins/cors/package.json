@@ -30,7 +30,7 @@
         "async": "^0.9.0",
         "blankie": "^1.1.0",
         "coffee-script": "^1.9.2",
-        "hapi": "^8.4.0",
+        "hapi": "^8.5.0",
         "scooter": "^2.0.1",
         "underscore": "^1.8.3"
     }
