@@ -1,6 +1,7 @@
 'use strict'
 
 gulp = require('gulp-param')(require('gulp'), process.argv)
+sourcemaps = require('gulp-sourcemaps')
 eslint = require('gulp-eslint')
 jsbeautify = require('gulp-jsbeautifier')
 coffeelint = require('gulp-coffeelint')
@@ -29,7 +30,9 @@ gulp.task 'lint', ->
     .pipe coffeelint.reporter()
 gulp.task 'coffee', [ 'lint' ], ->
   gulp.src(paths.coffee)
+    .pipe(sourcemaps.init())
     .pipe(coffee(bare: true).on('error', gutil.log))
+    .pipe(sourcemaps.write('.'))
     .pipe gulp.dest('./')
 gulp.task 'beautify', [ 'coffee' ], ->
   gulp.src(
