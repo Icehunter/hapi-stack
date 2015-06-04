@@ -1,7 +1,2 @@
-bower_components/*
 configuration/env.json
 node_modules/*
-*.js
-*.map
-!gulpfile.js
-!gruntfile.js
