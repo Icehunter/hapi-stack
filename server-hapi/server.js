@@ -162,9 +162,8 @@ async.series([
         async.whilst((function () {
             return index < servers.length;
         }), (function (cb) {
-            var connection, connectionOptions;
-            connection = servers[index];
-            connectionOptions = {
+            var connection = servers[index];
+            var connectionOptions = {
                 host: connection.host,
                 port: connection.port,
                 labels: [connection.key]
@@ -231,10 +230,9 @@ async.series([
     }
     else {
         server.start(function () {
-            var connection, index, key;
-            for (index in server.connections) {
-                connection = server.connections[index];
-                key = connection.settings.labels[0];
+            for (var index in server.connections) {
+                var connection = server.connections[index];
+                var key = connection.settings.labels[0];
                 server.log('info', util.format('%s Listening [%s:%s]', key.toUpperCase(), process.env.NODE_ENV || 'development', connection.info.port));
             }
             server.log('info', 'SERVER Initialized');
