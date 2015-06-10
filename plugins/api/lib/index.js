@@ -45,9 +45,18 @@ exports.register = function (server, options, next) {
         },
         function (cb) {
             server.register({
-                register: require('lout'),
+                register: require('server-hapi-security')
+            }, function (err) {
+                cb(err);
+            });
+        },
+        function (cb) {
+            server.register({
+                register: require('hapi-swagger'),
                 options: {
-                    endpoint: '/api'
+                    apiVersion: pkg.version,
+                    endpoint: '/api/docs',
+                    documentationPath: '/api'
                 }
             }, function (err) {
                 cb(err);

@@ -31,7 +31,12 @@ module.exports = function (server) {
         method: 'GET',
         path: '/api/status',
         config: {
-            handler: SystemInfo
+            handler: SystemInfo,
+            description: 'System Package, Environment & Status',
+            notes: 'Returns the status of the API along with current build information and ENV variables.',
+            tags: [
+                'api'
+            ]
         }
     }];
     return _this;

@@ -29,8 +29,10 @@
     },
     "dependencies": {
         "async": "^0.9.0",
+        "bcrypt": "^0.8.3",
         "coffee-script": "^1.9.2",
         "hapi": "^8.5.0",
+        "hapi-auth-basic": "^2.0.0",
         "hapi-auth-signature": "^2.0.2",
         "http-signature": "^0.11.0",
         "underscore": "^1.8.3"

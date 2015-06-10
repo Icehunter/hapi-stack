@@ -34,7 +34,6 @@ module.exports = [{
     regex: 'R_PLUGINS',
     replace: JSON.stringify([
         'server-hapi-logging',
-        'server-hapi-cors',
-        'server-hapi-security'
+        'server-hapi-cors'
     ])
 }];

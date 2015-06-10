@@ -32,8 +32,8 @@
         "cloneextend": "0.0.3",
         "coffee-script": "^1.9.2",
         "hapi": "^8.5.0",
+        "hapi-swagger": "^0.7.3",
         "joi": "^6.4.3",
-        "lout": "^6.2.2",
         "moment": "^2.10.3",
         "tv": "^4.1.0",
         "underscore": "^1.8.3"

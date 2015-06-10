@@ -45,5 +45,8 @@ npm link server-hapi-api
 npm link server-hapi-client
 npm link server-hapi-cors
 npm link server-hapi-logging
-npm link server-hapi-security
 npm link server-hapi-socketio
+cd $LAUNCH_DIR
+
+cd plugins/api/node_modules
+npm link server-hapi-security

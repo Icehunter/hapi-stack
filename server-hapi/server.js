@@ -125,6 +125,7 @@ async.series([
         });
         cb();
     },
+    // LOAD CONNECTIONS
     function (cb) {
         var index = 0;
         var servers = configuration.servers;
@@ -158,6 +159,7 @@ async.series([
             cb(err);
         });
     },
+    // LOAD GLOBAL PLUGINS
     function (cb) {
         try {
             var index = 0;
