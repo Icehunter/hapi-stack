@@ -1,6 +1,0 @@
-{>"layouts/layout.dust"/}
-{<content}
-
-<div><h1>Hello DUST</h1></div>
-
-{/content}

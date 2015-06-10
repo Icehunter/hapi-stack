@@ -1,6 +1,0 @@
-{>"layouts/layout_error.dust"/}
-{<content}
-
-<div><h1>Hello DUST Error</h1></div>
-
-{/content}

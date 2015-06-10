@@ -1,5 +1,7 @@
 'use strict';
 
+var exec = require('child_process').exec;
+
 var Hapi = require('hapi');
 var fs = require('fs');
 var os = require('os');
@@ -10,6 +12,34 @@ var _ = require('underscore');
 var formatters = require('./app/helpers/formatters')();
 var server = void 0;
 var configuration = {};
+
+function ensureModule(key, version, cb) {
+    var serverModule;
+    var installed = false;
+    try {
+        serverModule = require(key);
+        installed = true;
+    }
+    catch (err) {
+        console.log('Module Error:', err.message || err);
+    }
+    if (installed) {
+        cb(null, serverModule);
+    }
+    else {
+        var command = util.format('npm i %s@%s', key, version || 'latest');
+        console.log('Running Command:', command);
+        exec(command, function (err) {
+            if (err) {
+                cb(err);
+            }
+            else {
+                console.log('Installed:', key);
+                cb(null, require(key));
+            }
+        });
+    }
+}
 
 function handleConfiguration(env) {
     var key;
@@ -145,15 +175,22 @@ async.series([
                     cert: fs.readFileSync(util.format('%s/%s.crt', connection.certificatesPath, connection.key))
                 };
             }
-            server.connection(connectionOptions).register({
-                register: require(connection.key),
-                select: [connection.key],
-                options: {
-                    setup: connection
+            ensureModule(connection.key, connection.version, function (err, serverModule) {
+                if (err) {
+                    cb(err);
                 }
-            }, function (err) {
-                index++;
-                cb(err);
+                else {
+                    server.connection(connectionOptions).register({
+                        register: serverModule,
+                        select: [connection.key],
+                        options: {
+                            setup: connection
+                        }
+                    }, function (err) {
+                        index++;
+                        cb(err);
+                    });
+                }
             });
         }), function (err) {
             cb(err);
@@ -167,9 +204,16 @@ async.series([
             async.whilst((function () {
                 return index < plugins.length;
             }), (function (cb) {
-                server.register(require(plugins[index]), function (err) {
-                    index++;
-                    cb(err);
+                ensureModule(plugins[index], null, function (err, pluginModule) {
+                    if (err) {
+                        cb(err);
+                    }
+                    else {
+                        server.register(pluginModule, function (err) {
+                            index++;
+                            cb(err);
+                        });
+                    }
                 });
             }), function (err) {
                 cb(err);

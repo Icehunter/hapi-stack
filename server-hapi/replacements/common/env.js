@@ -6,7 +6,7 @@ module.exports = [{
 }, {
     regex: 'R_SERVERS',
     replace: JSON.stringify([{
-        key: 'server-hapi-api',
+        key: '@icehunter/hapi-api',
         host: '127.0.0.1',
         domain: '127.0.0.1',
         port: 8000,
@@ -14,7 +14,7 @@ module.exports = [{
         certificatesPath: '/opt/hapi-stack/certificates',
         config: {}
     }, {
-        key: 'server-hapi-client',
+        key: '@icehunter/hapi-client',
         host: '127.0.0.1',
         domain: '127.0.0.1',
         port: 3000,
@@ -22,7 +22,7 @@ module.exports = [{
         certificatesPath: '/opt/hapi-stack/certificates',
         config: {}
     }, {
-        key: 'server-hapi-socketio',
+        key: '@icehunter/hapi-socketio',
         host: '127.0.0.1',
         domain: '127.0.0.1',
         port: 4000,
@@ -33,7 +33,7 @@ module.exports = [{
 }, {
     regex: 'R_PLUGINS',
     replace: JSON.stringify([
-        'server-hapi-logging',
-        'server-hapi-cors'
+        '@icehunter/hapi-logging',
+        '@icehunter/hapi-cors'
     ])
 }];
