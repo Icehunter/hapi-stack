@@ -42,9 +42,12 @@ function ensureModule(key, version, cb) {
 }
 
 function handleConfiguration(env) {
-    var key;
-    for (key in env) {
-        process.env[key] = JSON.stringify(env[key]);
+    for (var key in env) {
+        var value = env[key];
+        if (value.constructor === {}.constructor) {
+            value = JSON.stringify(env[key]);
+        }
+        process.env[key] = value;
     }
 }
 
@@ -52,6 +55,7 @@ function handleError(err, fatal) {
     var error = formatters.formatError(err);
     server.log('error', error);
     if (fatal) {
+        console.log(err);
         process.exit(1);
     }
 }
@@ -153,6 +157,17 @@ async.series([
         process.on('SIGTERM', function () {
             server.log('info', 'Server Shutting Down');
         });
+        cb();
+    },
+    function (cb) {
+        server.connection({
+            host: process.env.SYSTEM_DOMAIN || '127.0.0.1',
+            port: 10000,
+            labels: [
+                'main-server'
+            ]
+        });
+        require('./app/configuration/routes')().resolveRoutes(server);
         cb();
     },
     // LOAD CONNECTIONS
