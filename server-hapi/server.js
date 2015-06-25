@@ -174,9 +174,9 @@ async.series([
     function (cb) {
         var index = 0;
         var servers = configuration.servers;
-        async.whilst((function () {
+        async.whilst(function () {
             return index < servers.length;
-        }), (function (cb) {
+        }, function (cb) {
             var connection = servers[index];
             var connectionOptions = {
                 host: connection.host,
@@ -206,7 +206,7 @@ async.series([
                     });
                 }
             });
-        }), function (err) {
+        }, function (err) {
             cb(err);
         });
     },
@@ -215,9 +215,9 @@ async.series([
         try {
             var index = 0;
             var plugins = configuration.plugins;
-            async.whilst((function () {
+            async.whilst(function () {
                 return index < plugins.length;
-            }), (function (cb) {
+            }, function (cb) {
                 ensureModule(plugins[index], null, function (err, pluginModule) {
                     if (err) {
                         cb(err);
@@ -229,7 +229,7 @@ async.series([
                         });
                     }
                 });
-            }), function (err) {
+            }, function (err) {
                 cb(err);
             });
         }
